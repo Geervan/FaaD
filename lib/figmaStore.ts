@@ -78,8 +78,8 @@ class FigmaStoreEngine {
       this.isHydrated = true;
       this.lastHydratedAt = Date.now();
 
-      // Seed initial data ONLY ONCE on absolute first startup if canvas is totally blank and never seeded before
-      if (figmaComments.length === 0 && !this.hasSeededInitialData) {
+      // Seed initial demo data ONLY if Figma credentials are NOT configured (local dev fallback)
+      if (figmaComments.length === 0 && !this.hasSeededInitialData && !FigmaAdapter.isConfigured()) {
         this.hasSeededInitialData = true;
         await this.seedInitialData();
       }
@@ -705,7 +705,7 @@ class FigmaStoreEngine {
     const header = `VOTE REGISTER BATCH: ${totalVotes} Total Cast Votes`;
 
     const oldFigmaId = this.lastVoteBatchFigmaId;
-    const payload = `${header}\n[DB_ENTITY:VOTE_BATCH]\n${JSON.stringify(voteBatch)}`;
+    const payload = `${header}\n[DB_ENTITY:VOTE_BATCH]\n${JSON.stringify(payload)}`;
     const newFigmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
     this.lastVoteBatchFigmaId = newFigmaId;
 
@@ -719,7 +719,7 @@ class FigmaStoreEngine {
   }
 }
 
-// Attach FigmaStore to globalThis so Next.js dev server worker threads share the exact same in-memory singleton
+// Attach FigmaStore to globalThis so Next.js serverless functions share in-memory singleton per container
 const globalForFigmaStore = globalThis as unknown as {
   figmaStore: FigmaStoreEngine | undefined;
 };
@@ -727,7 +727,6 @@ const globalForFigmaStore = globalThis as unknown as {
 if (!globalForFigmaStore.figmaStore) {
   globalForFigmaStore.figmaStore = new FigmaStoreEngine();
 } else {
-  // Update prototype in Next.js dev mode so new methods like deleteCommunity are immediately bound to global singleton
   Object.setPrototypeOf(globalForFigmaStore.figmaStore, FigmaStoreEngine.prototype);
 }
 
