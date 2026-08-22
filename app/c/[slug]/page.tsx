@@ -11,7 +11,7 @@ import BackButton from '@/components/BackButton';
 export const revalidate = 0;
 
 export default async function CommunityPage({ params }: { params: Promise<{ slug: string }> }) {
-  await FigmaStore.ensureHydrated();
+  await FigmaStore.ensureHydrated(true);
   const { slug } = await params;
   const community = FigmaStore.getCommunityBySlug(slug);
 
