@@ -1,8 +1,8 @@
 # FaaD (FigmaAsADatabase)
 
-FaaD (FigmaAsADatabase) is a proof-of-concept database architecture that demonstrates how a live Figma design canvas can function as a real-time, persistent backend data store for web applications. 
+FaaD (FigmaAsADatabase) is an architectural proof-of-concept demonstrating how a live Figma design canvas can function as a real-time, persistent backend database for web applications.
 
-This repository contains a full-stack, Reddit-like community forum built with Next.js App Router and TypeScript that implements the FaaD concept. Every user account, community directory, discussion topic, nested comment reply, membership role, and vote score is indexed and stored as structured comment pins directly on a live Figma file canvas via the Figma REST API.
+This repository contains a full-stack, Reddit-like community forum web application built with Next.js App Router and TypeScript that implements the FaaD architecture. All user accounts, community directories, discussion topics, nested comment replies, membership roles, and vote tallies are indexed and stored as structured comment pins directly on a live Figma file canvas via the Figma REST API.
 
 ---
 
@@ -10,7 +10,7 @@ This repository contains a full-stack, Reddit-like community forum built with Ne
 
 FaaD replaces traditional relational databases (such as PostgreSQL or MySQL) and document stores (such as MongoDB) with a spatial database abstraction layer. Instead of executing SQL queries or JSON document mutations, application data operations are translated into structured, coordinate-mapped comment pins on a Figma design canvas.
 
-### Why FaaD?
+### Core Architectural Principles
 
 - Zero Database Infrastructure: No database servers, connection pools, or ORMs are required.
 - Visual Database Inspection: Developers and designers can visually inspect the entire application database state by zooming around frames inside the Figma canvas.
@@ -20,19 +20,19 @@ FaaD replaces traditional relational databases (such as PostgreSQL or MySQL) and
 
 ## Technical Architecture
 
-The Reddit-like forum web application reads and writes entities through a custom spatial database engine (`FigmaStoreEngine`) coupled with an API wrapper (`FigmaAdapter`).
+The web application reads and writes entities through a custom spatial database engine (`FigmaStoreEngine`) coupled with an API wrapper (`FigmaAdapter`).
 
 ### Architecture Highlights
 
 - Storage Engine: Live Figma REST API File Comments (`/v1/files/{file_key}/comments`).
-- Spatial Entity Indexing: Canvas bounding regions organize entities visually on the Figma canvas across dedicated coordinate boxes (`USERS`, `COMMUNITIES`, `MEMBERSHIPS`, `POSTS`, `COMMENTS`, `VOTES`).
+- Spatial Entity Indexing: Bounding regions organize entities visually on the Figma canvas across dedicated coordinate boxes (`USERS`, `COMMUNITIES`, `MEMBERSHIPS`, `POSTS`, `COMMENTS`, `VOTES`).
 - Fault-Tolerant Atomic Hydration: Atomic staging maps parse incoming API payload revisions before swapping store state, guaranteeing zero data wipes or temporary 404 errors during API rate limits (HTTP 429).
-- Offline Fallback Engine: Seamless fallback to local JSON storage (`.figma_fallback_comments.json`) when network constraints or unconfigured API keys occur.
+- Offline Fallback Engine: Seamless fallback to local JSON storage (`.figma_fallback_comments.json`) when network constraints occur.
 - Classic Forum Layout: High-density layout inspired by classic internet forums (vBulletin, phpBB, Reddit), featuring left-author thread post cards, user role badges, nested comment trees, and sticky footers.
 
 ---
 
-## System Architecture and Database Schema
+## System Architecture and Spatial Schema
 
 Entities are serialized into JSON strings containing an identifying header and tag prefix (`[DB_ENTITY:TYPE]`). Revisions and updates append new comments chronologically, ensuring that the latest payload state supersedes prior records upon store re-hydration.
 
@@ -50,7 +50,7 @@ Entities are serialized into JSON strings containing an identifying header and t
 +-------------------+-------------------+-------------------+
 ```
 
-### Supported Entities
+### Entity Definitions
 
 1. User Accounts (`[DB_ENTITY:USER]`)
    - Attributes: `id`, `username`, `passwordHash`, `bio`, `avatarUrl`, `createdAt`
@@ -94,70 +94,3 @@ Entities are serialized into JSON strings containing an identifying header and t
 ### Voting System
 - Upvoting and downvoting on posts and comment replies.
 - Batched vote tracking synced asynchronously to the Figma canvas.
-
----
-
-## Environment Variables
-
-Create a `.env.local` file in the root of the project with the following configuration:
-
-```env
-FIGMA_ACCESS_TOKEN=figd_your_personal_access_token
-FIGMA_FILE_KEY=your_figma_file_id
-JWT_SECRET=your_secure_jwt_secret_key
-```
-
-### Obtaining Figma Credentials
-
-1. Personal Access Token: Go to Figma Settings -> Account -> Personal Access Tokens and generate a new token.
-2. File Key: Open your Figma design file in the browser. The file key is the string located in the URL between `/file/` and your file name:
-   `https://www.figma.com/file/{FIGMA_FILE_KEY}/Your-File-Name`
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js version 18.0.0 or higher.
-- npm, yarn, or pnpm package manager.
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/faad.git
-   cd faad
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-
-4. Open your browser and navigate to `http://localhost:3000`.
-
-### Production Build Verification
-
-To compile TypeScript and build the production bundle:
-
-```bash
-npm run build
-```
-
-To start the production server:
-
-```bash
-npm run start
-```
-
----
-
-## License
-
-This project is open-source and available under the MIT License.
