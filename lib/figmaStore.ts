@@ -224,15 +224,13 @@ class FigmaStoreEngine {
     const header = `USER: @${user.username}`;
     const payload = `${header}\n[DB_ENTITY:USER]\n${JSON.stringify(user)}`;
 
-    (async () => {
-      try {
-        const clientMeta = await FigmaAdapter.calculateCommentCoordinates('USERS', index);
-        const figmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
-        user.figmaCommentId = figmaId;
-      } catch (e) {
-        console.warn('[FigmaStore] Background user persistence warning:', e);
-      }
-    })();
+    try {
+      const clientMeta = await FigmaAdapter.calculateCommentCoordinates('USERS', index);
+      const figmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      user.figmaCommentId = figmaId;
+    } catch (e) {
+      console.warn('[FigmaStore] User persistence warning:', e);
+    }
 
     return user;
   }
@@ -247,14 +245,12 @@ class FigmaStoreEngine {
     const header = `USER: @${user.username} (Updated Profile)`;
     const payload = `${header}\n[DB_ENTITY:USER]\n${JSON.stringify(user)}`;
 
-    (async () => {
-      try {
-        const clientMeta = await FigmaAdapter.calculateCommentCoordinates('USERS', index >= 0 ? index : 0);
-        await FigmaAdapter.postComment(payload, undefined, clientMeta);
-      } catch (e) {
-        console.warn('[FigmaStore] Background bio update warning:', e);
-      }
-    })();
+    try {
+      const clientMeta = await FigmaAdapter.calculateCommentCoordinates('USERS', index >= 0 ? index : 0);
+      await FigmaAdapter.postComment(payload, undefined, clientMeta);
+    } catch (e) {
+      console.warn('[FigmaStore] Bio update warning:', e);
+    }
 
     return user;
   }
@@ -302,15 +298,13 @@ class FigmaStoreEngine {
     const header = `COMMUNITY: /c/${community.slug} (${community.name})`;
     const payload = `${header}\n[DB_ENTITY:COMMUNITY]\n${JSON.stringify(community)}`;
 
-    (async () => {
-      try {
-        const clientMeta = await FigmaAdapter.calculateCommentCoordinates('COMMUNITIES', index);
-        const figmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
-        community.figmaCommentId = figmaId;
-      } catch (e) {
-        console.warn('[FigmaStore] Background community creation warning:', e);
-      }
-    })();
+    try {
+      const clientMeta = await FigmaAdapter.calculateCommentCoordinates('COMMUNITIES', index);
+      const figmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      community.figmaCommentId = figmaId;
+    } catch (e) {
+      console.warn('[FigmaStore] Community creation warning:', e);
+    }
 
     return community;
   }
@@ -326,14 +320,12 @@ class FigmaStoreEngine {
     const header = `COMMUNITY (Updated): /c/${community.slug} (${community.name})`;
     const payload = `${header}\n[DB_ENTITY:COMMUNITY]\n${JSON.stringify(community)}`;
 
-    (async () => {
-      try {
-        const clientMeta = await FigmaAdapter.calculateCommentCoordinates('COMMUNITIES', index >= 0 ? index : 0);
-        await FigmaAdapter.postComment(payload, undefined, clientMeta);
-      } catch (e) {
-        console.warn('[FigmaStore] Background community update warning:', e);
-      }
-    })();
+    try {
+      const clientMeta = await FigmaAdapter.calculateCommentCoordinates('COMMUNITIES', index >= 0 ? index : 0);
+      await FigmaAdapter.postComment(payload, undefined, clientMeta);
+    } catch (e) {
+      console.warn('[FigmaStore] Community update warning:', e);
+    }
 
     return community;
   }
@@ -344,16 +336,13 @@ class FigmaStoreEngine {
 
     this.deletedEntityIds.add(community.id);
     this.communities.delete(communityId);
-    FigmaAdapter.deleteComment(community.id);
 
     if (community.figmaCommentId) {
-      const fid = community.figmaCommentId;
-      (async () => {
-        try {
-          await FigmaAdapter.deleteComment(fid);
-        } catch (e) {}
-      })();
+      try {
+        await FigmaAdapter.deleteComment(community.figmaCommentId);
+      } catch (e) {}
     }
+    await FigmaAdapter.deleteComment(community.id);
 
     // Delete associated posts
     const communityPosts = this.getPostsByCommunity(communityId);
@@ -366,15 +355,12 @@ class FigmaStoreEngine {
     for (const mem of communityMemberships) {
       this.deletedEntityIds.add(mem.id);
       this.memberships.delete(mem.id);
-      FigmaAdapter.deleteComment(mem.id);
       if (mem.figmaCommentId) {
-        const fid = mem.figmaCommentId;
-        (async () => {
-          try {
-            await FigmaAdapter.deleteComment(fid);
-          } catch (e) {}
-        })();
+        try {
+          await FigmaAdapter.deleteComment(mem.figmaCommentId);
+        } catch (e) {}
       }
+      await FigmaAdapter.deleteComment(mem.id);
     }
 
     return true;
@@ -398,7 +384,6 @@ class FigmaStoreEngine {
   }
 
   public async setMembership(communityId: string, userId: string, role: Role): Promise<Membership> {
-    // 1. Purge any old/duplicate membership records for this user in this community
     const oldMemberships = this.getMemberships().filter((m) => m.communityId === communityId && m.userId === userId);
     for (const oldM of oldMemberships) {
       this.deletedEntityIds.delete(oldM.id);
@@ -423,15 +408,13 @@ class FigmaStoreEngine {
     const header = `MEMBERSHIP: @${user?.username || userId} is ${role} of /c/${com?.slug || communityId}`;
     const payload = `${header}\n[DB_ENTITY:MEMBERSHIP]\n${JSON.stringify(membership)}`;
 
-    (async () => {
-      try {
-        const clientMeta = await FigmaAdapter.calculateCommentCoordinates('MEMBERSHIPS', index);
-        const figmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
-        membership.figmaCommentId = figmaId;
-      } catch (e) {
-        console.warn('[FigmaStore] Background membership creation warning:', e);
-      }
-    })();
+    try {
+      const clientMeta = await FigmaAdapter.calculateCommentCoordinates('MEMBERSHIPS', index);
+      const figmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      membership.figmaCommentId = figmaId;
+    } catch (e) {
+      console.warn('[FigmaStore] Membership creation warning:', e);
+    }
 
     return membership;
   }
@@ -443,18 +426,12 @@ class FigmaStoreEngine {
     for (const m of matching) {
       this.deletedEntityIds.add(m.id);
       this.memberships.delete(m.id);
-      FigmaAdapter.deleteComment(m.id);
-
       if (m.figmaCommentId) {
-        const fid = m.figmaCommentId;
-        (async () => {
-          try {
-            await FigmaAdapter.deleteComment(fid);
-          } catch (e) {
-            console.warn('[FigmaStore] Background membership deletion warning:', e);
-          }
-        })();
+        try {
+          await FigmaAdapter.deleteComment(m.figmaCommentId);
+        } catch (e) {}
       }
+      await FigmaAdapter.deleteComment(m.id);
     }
     return true;
   }
@@ -490,15 +467,13 @@ class FigmaStoreEngine {
     const header = `POST: "${post.title}" by @${author?.username || 'user'} in /c/${com?.slug || 'community'}`;
     const payload = `${header}\n[DB_ENTITY:POST]\n${JSON.stringify(post)}`;
 
-    (async () => {
-      try {
-        const clientMeta = await FigmaAdapter.calculateCommentCoordinates('POSTS', index);
-        const figmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
-        post.figmaCommentId = figmaId;
-      } catch (e) {
-        console.warn('[FigmaStore] Background post creation warning:', e);
-      }
-    })();
+    try {
+      const clientMeta = await FigmaAdapter.calculateCommentCoordinates('POSTS', index);
+      const figmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      post.figmaCommentId = figmaId;
+    } catch (e) {
+      console.warn('[FigmaStore] Post creation warning:', e);
+    }
 
     return post;
   }
@@ -517,14 +492,12 @@ class FigmaStoreEngine {
     const header = `POST (Updated): "${post.title}" by @${author?.username || 'user'}`;
     const payload = `${header}\n[DB_ENTITY:POST]\n${JSON.stringify(post)}`;
 
-    (async () => {
-      try {
-        const clientMeta = await FigmaAdapter.calculateCommentCoordinates('POSTS', index >= 0 ? index : 0);
-        await FigmaAdapter.postComment(payload, undefined, clientMeta);
-      } catch (e) {
-        console.warn('[FigmaStore] Background post update warning:', e);
-      }
-    })();
+    try {
+      const clientMeta = await FigmaAdapter.calculateCommentCoordinates('POSTS', index >= 0 ? index : 0);
+      await FigmaAdapter.postComment(payload, undefined, clientMeta);
+    } catch (e) {
+      console.warn('[FigmaStore] Post update warning:', e);
+    }
 
     return post;
   }
@@ -537,12 +510,9 @@ class FigmaStoreEngine {
     this.posts.delete(postId);
 
     if (post.figmaCommentId) {
-      const fid = post.figmaCommentId;
-      (async () => {
-        try {
-          await FigmaAdapter.deleteComment(fid);
-        } catch (e) {}
-      })();
+      try {
+        await FigmaAdapter.deleteComment(post.figmaCommentId);
+      } catch (e) {}
     }
 
     // Delete associated comments from memory
@@ -551,12 +521,9 @@ class FigmaStoreEngine {
         this.deletedEntityIds.add(cmt.id);
         this.comments.delete(cmtId);
         if (cmt.figmaCommentId) {
-          const fid = cmt.figmaCommentId;
-          (async () => {
-            try {
-              await FigmaAdapter.deleteComment(fid);
-            } catch (e) {}
-          })();
+          try {
+            await FigmaAdapter.deleteComment(cmt.figmaCommentId);
+          } catch (e) {}
         }
       }
     }
@@ -599,15 +566,13 @@ class FigmaStoreEngine {
     const header = `COMMENT by @${author?.username || 'user'} on "${post?.title || 'post'}": "${snippet}"`;
     const payload = `${header}\n[DB_ENTITY:COMMENT]\n${JSON.stringify(comment)}`;
 
-    (async () => {
-      try {
-        const clientMeta = await FigmaAdapter.calculateCommentCoordinates('COMMENTS', index);
-        const figmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
-        comment.figmaCommentId = figmaId;
-      } catch (e) {
-        console.warn('[FigmaStore] Background comment creation warning:', e);
-      }
-    })();
+    try {
+      const clientMeta = await FigmaAdapter.calculateCommentCoordinates('COMMENTS', index);
+      const figmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      comment.figmaCommentId = figmaId;
+    } catch (e) {
+      console.warn('[FigmaStore] Comment creation warning:', e);
+    }
 
     return comment;
   }
@@ -624,14 +589,12 @@ class FigmaStoreEngine {
     const header = `COMMENT (Updated) by @${author?.username || 'user'}: "${snippet}"`;
     const payload = `${header}\n[DB_ENTITY:COMMENT]\n${JSON.stringify(comment)}`;
 
-    (async () => {
-      try {
-        const clientMeta = await FigmaAdapter.calculateCommentCoordinates('COMMENTS', index >= 0 ? index : 0);
-        await FigmaAdapter.postComment(payload, undefined, clientMeta);
-      } catch (e) {
-        console.warn('[FigmaStore] Background comment update warning:', e);
-      }
-    })();
+    try {
+      const clientMeta = await FigmaAdapter.calculateCommentCoordinates('COMMENTS', index >= 0 ? index : 0);
+      await FigmaAdapter.postComment(payload, undefined, clientMeta);
+    } catch (e) {
+      console.warn('[FigmaStore] Comment update warning:', e);
+    }
 
     return comment;
   }
@@ -644,12 +607,9 @@ class FigmaStoreEngine {
     this.comments.delete(commentId);
 
     if (comment.figmaCommentId) {
-      const fid = comment.figmaCommentId;
-      (async () => {
-        try {
-          await FigmaAdapter.deleteComment(fid);
-        } catch (e) {}
-      })();
+      try {
+        await FigmaAdapter.deleteComment(comment.figmaCommentId);
+      } catch (e) {}
     }
     return true;
   }
@@ -683,11 +643,9 @@ class FigmaStoreEngine {
       this.votes[targetId][userId] = direction;
     }
 
-    (async () => {
-      try {
-        await this.flushVoteBatch();
-      } catch (e) {}
-    })();
+    try {
+      await this.flushVoteBatch();
+    } catch (e) {}
 
     const tally = this.getVoteTally(targetId);
     return { score: tally.score, userVote: direction };
@@ -710,11 +668,9 @@ class FigmaStoreEngine {
     this.lastVoteBatchFigmaId = newFigmaId;
 
     if (oldFigmaId) {
-      (async () => {
-        try {
-          await FigmaAdapter.deleteComment(oldFigmaId);
-        } catch (e) {}
-      })();
+      try {
+        await FigmaAdapter.deleteComment(oldFigmaId);
+      } catch (e) {}
     }
   }
 }
