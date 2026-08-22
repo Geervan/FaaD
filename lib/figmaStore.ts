@@ -705,7 +705,7 @@ class FigmaStoreEngine {
     const header = `VOTE REGISTER BATCH: ${totalVotes} Total Cast Votes`;
 
     const oldFigmaId = this.lastVoteBatchFigmaId;
-    const payload = `${header}\n[DB_ENTITY:VOTE_BATCH]\n${JSON.stringify(payload)}`;
+    const payload = `${header}\n[DB_ENTITY:VOTE_BATCH]\n${JSON.stringify(voteBatch)}`;
     const newFigmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
     this.lastVoteBatchFigmaId = newFigmaId;
 
