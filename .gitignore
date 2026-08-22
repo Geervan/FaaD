@@ -30,8 +30,24 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files
+.env
+.env.local
+.env.*
+
+# local fallback store
+.figma_data_fallback.json
+.figma_fallback_comments.json
+
+# temporary scratch scripts
+cleanup_all_comments.ts
+inspect_figma_nodes.ts
+inspect_live_comments.ts
+seed_clean_demo.ts
+test_e2e_all_flows.ts
+test_live_figma_conn.ts
+test_region_mapping.ts
+trigger_force_hydrate.ts
 
 # vercel
 .vercel
