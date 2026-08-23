@@ -48,6 +48,7 @@ export default function EditProfilePage() {
       } else {
         setMessage('Profile updated successfully!');
         router.refresh();
+        window.location.reload();
       }
     } catch (err: any) {
       setError(err.message || 'Server error.');

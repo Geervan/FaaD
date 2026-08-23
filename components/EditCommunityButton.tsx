@@ -35,6 +35,7 @@ export default function EditCommunityButton({ slug, initialName, initialDescript
       } else {
         setIsOpen(false);
         router.refresh();
+        window.location.reload();
       }
     } catch (err: any) {
       setError(err.message || 'Server error.');

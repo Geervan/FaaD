@@ -163,20 +163,38 @@ class FigmaStoreEngine {
         const jsonStr = entitySection.replace('[DB_ENTITY:USER]', '').trim();
         const user: User = JSON.parse(jsonStr);
         if (this.deletedEntityIds.has(user.id)) return;
-        user.figmaCommentId = comment.id;
-        stagedUsers.set(user.id, user);
+        const existing = stagedUsers.get(user.id);
+        const commentTime = new Date(comment.created_at).getTime();
+        const existingTime = (existing as any)?._commentCreatedAt || 0;
+        if (!existing || commentTime >= existingTime) {
+          (user as any)._commentCreatedAt = commentTime;
+          user.figmaCommentId = comment.id;
+          stagedUsers.set(user.id, user);
+        }
       } else if (entitySection.startsWith('[DB_ENTITY:COMMUNITY]')) {
         const jsonStr = entitySection.replace('[DB_ENTITY:COMMUNITY]', '').trim();
         const community: Community = JSON.parse(jsonStr);
         if (this.deletedEntityIds.has(community.id)) return;
-        community.figmaCommentId = comment.id;
-        stagedCommunities.set(community.id, community);
+        const existing = stagedCommunities.get(community.id);
+        const commentTime = new Date(comment.created_at).getTime();
+        const existingTime = (existing as any)?._commentCreatedAt || 0;
+        if (!existing || commentTime >= existingTime) {
+          (community as any)._commentCreatedAt = commentTime;
+          community.figmaCommentId = comment.id;
+          stagedCommunities.set(community.id, community);
+        }
       } else if (entitySection.startsWith('[DB_ENTITY:MEMBERSHIP]')) {
         const jsonStr = entitySection.replace('[DB_ENTITY:MEMBERSHIP]', '').trim();
         const membership: Membership = JSON.parse(jsonStr);
         if (this.deletedEntityIds.has(membership.id)) return;
-        membership.figmaCommentId = comment.id;
-        stagedMemberships.set(membership.id, membership);
+        const existing = stagedMemberships.get(membership.id);
+        const commentTime = new Date(comment.created_at).getTime();
+        const existingTime = (existing as any)?._commentCreatedAt || 0;
+        if (!existing || commentTime >= existingTime) {
+          (membership as any)._commentCreatedAt = commentTime;
+          membership.figmaCommentId = comment.id;
+          stagedMemberships.set(membership.id, membership);
+        }
       } else if (entitySection.startsWith('[DB_ENTITY:POST]')) {
         const jsonStr = entitySection.replace('[DB_ENTITY:POST]', '').trim();
         const post: Post = JSON.parse(jsonStr);
@@ -251,6 +269,9 @@ class FigmaStoreEngine {
   public async updateUserBio(userId: string, bio: string, avatarUrl?: string): Promise<User | null> {
     const user = this.users.get(userId);
     if (!user) return null;
+
+    const oldFigmaId = user.figmaCommentId;
+
     user.bio = bio;
     if (avatarUrl) user.avatarUrl = avatarUrl;
 
@@ -260,7 +281,13 @@ class FigmaStoreEngine {
 
     try {
       const clientMeta = await FigmaAdapter.calculateCommentCoordinates('USERS', index >= 0 ? index : 0);
-      await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      const newFigmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      user.figmaCommentId = newFigmaId;
+      if (oldFigmaId && oldFigmaId !== newFigmaId) {
+        try {
+          await FigmaAdapter.deleteComment(oldFigmaId);
+        } catch (e) {}
+      }
     } catch (e) {
       console.warn('[FigmaStore] Bio update warning:', e);
     }
@@ -326,6 +353,8 @@ class FigmaStoreEngine {
     const community = this.communities.get(communityId);
     if (!community) return null;
 
+    const oldFigmaId = community.figmaCommentId;
+
     community.name = name;
     community.description = description;
 
@@ -335,7 +364,13 @@ class FigmaStoreEngine {
 
     try {
       const clientMeta = await FigmaAdapter.calculateCommentCoordinates('COMMUNITIES', index >= 0 ? index : 0);
-      await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      const newFigmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      community.figmaCommentId = newFigmaId;
+      if (oldFigmaId && oldFigmaId !== newFigmaId) {
+        try {
+          await FigmaAdapter.deleteComment(oldFigmaId);
+        } catch (e) {}
+      }
     } catch (e) {
       console.warn('[FigmaStore] Community update warning:', e);
     }
@@ -401,6 +436,11 @@ class FigmaStoreEngine {
     for (const oldM of oldMemberships) {
       this.deletedEntityIds.delete(oldM.id);
       this.memberships.delete(oldM.id);
+      if (oldM.figmaCommentId) {
+        try {
+          await FigmaAdapter.deleteComment(oldM.figmaCommentId);
+        } catch (e) {}
+      }
     }
 
     const user = this.getUserById(userId);
