@@ -40,6 +40,7 @@ yarn-error.log*
 .figma_fallback_comments.json
 
 # temporary scratch scripts
+/scratch/
 cleanup_all_comments.ts
 inspect_figma_nodes.ts
 inspect_live_comments.ts

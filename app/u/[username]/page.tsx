@@ -39,42 +39,31 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
       </div>
 
       {/* Profile Header Box */}
-      <div
-        style={{
-          border: '1px solid #dee2e6',
-          borderRadius: '3px',
-          padding: '20px',
-          backgroundColor: '#f8f9fa',
-          display: 'flex',
-          gap: '20px',
-          alignItems: 'center',
-          marginBottom: '24px',
-        }}
-      >
+      <div className="profile-card">
         <img
           src={user.avatarUrl || 'https://api.dicebear.com/7.x/identicon/svg?seed=user'}
           alt="Avatar"
-          style={{ width: '72px', height: '72px', borderRadius: '3px', border: '1px solid #dee2e6', background: '#fff' }}
+          className="profile-avatar"
         />
 
-        <div style={{ flexGrow: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="profile-details">
+          <div className="profile-card-header">
             <div>
               <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#121416' }}>@{user.username}</h1>
               <p style={{ color: '#495057', fontSize: '13px', marginTop: '4px' }}>{user.bio || 'No bio provided.'}</p>
             </div>
             {isSelf && (
-              <Link href="/settings/profile" className="btn btn-secondary btn-sm">
+              <Link href="/settings/profile" className="btn btn-secondary btn-sm" style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
                 Edit Profile
               </Link>
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '20px', marginTop: '12px', fontSize: '12px', color: '#5c6370' }}>
-            <span>Joined: {new Date(user.createdAt).toLocaleDateString()}</span>
-            <span>Topics: {posts.length}</span>
-            <span>Comments: {comments.length}</span>
-            <span>Communities: {joinedCommunities.length}</span>
+          <div className="profile-stats-row">
+            <span><strong>Joined:</strong> {new Date(user.createdAt).toLocaleDateString()}</span>
+            <span><strong>Topics:</strong> {posts.length}</span>
+            <span><strong>Comments:</strong> {comments.length}</span>
+            <span><strong>Communities:</strong> {joinedCommunities.length}</span>
           </div>
         </div>
       </div>
@@ -87,35 +76,37 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
             User has not started any topics yet.
           </div>
         ) : (
-          <table className="forum-table">
-            <thead>
-              <tr>
-                <th style={{ width: '60%' }}>Topic Title</th>
-                <th style={{ width: '25%' }}>Community</th>
-                <th style={{ width: '15%', textAlign: 'right' }}>Posted Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {posts.map((p) => {
-                const com = FigmaStore.getCommunityById(p.communityId);
-                return (
-                  <tr key={p.id}>
-                    <td>
-                      <Link href={`/c/${com?.slug}/posts/${p.id}`} style={{ fontWeight: '600' }}>
-                        {p.title}
-                      </Link>
-                    </td>
-                    <td>
-                      <Link href={`/c/${com?.slug}`}>/c/{com?.slug}</Link>
-                    </td>
-                    <td style={{ textAlign: 'right', color: '#5c6370', fontSize: '12px' }}>
-                      {new Date(p.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="forum-table-wrapper">
+            <table className="forum-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '55%' }}>Topic Title</th>
+                  <th style={{ width: '25%' }}>Community</th>
+                  <th style={{ width: '20%', textAlign: 'right' }}>Posted Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {posts.map((p) => {
+                  const com = FigmaStore.getCommunityById(p.communityId);
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <Link href={`/c/${com?.slug}/posts/${p.id}`} style={{ fontWeight: '600' }}>
+                          {p.title}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link href={`/c/${com?.slug}`}>/c/{com?.slug}</Link>
+                      </td>
+                      <td style={{ textAlign: 'right', color: '#5c6370', fontSize: '12px' }}>
+                        {new Date(p.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
