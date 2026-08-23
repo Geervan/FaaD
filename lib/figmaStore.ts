@@ -1,5 +1,6 @@
 import { FigmaAdapter, FigmaComment } from './figmaAdapter';
 import { User, Community, Membership, Post, Comment, VoteBatch, Role } from './types';
+import { replaceEmojiShortcodes } from './emoji';
 
 class FigmaStoreEngine {
   private users: Map<string, User> = new Map();
@@ -180,14 +181,26 @@ class FigmaStoreEngine {
         const jsonStr = entitySection.replace('[DB_ENTITY:POST]', '').trim();
         const post: Post = JSON.parse(jsonStr);
         if (this.deletedEntityIds.has(post.id)) return;
-        post.figmaCommentId = comment.id;
-        stagedPosts.set(post.id, post);
+        const existing = stagedPosts.get(post.id);
+        const commentTime = new Date(comment.created_at).getTime();
+        const existingTime = (existing as any)?._commentCreatedAt || 0;
+        if (!existing || commentTime >= existingTime) {
+          (post as any)._commentCreatedAt = commentTime;
+          post.figmaCommentId = comment.id;
+          stagedPosts.set(post.id, post);
+        }
       } else if (entitySection.startsWith('[DB_ENTITY:COMMENT]')) {
         const jsonStr = entitySection.replace('[DB_ENTITY:COMMENT]', '').trim();
         const cmt: Comment = JSON.parse(jsonStr);
         if (this.deletedEntityIds.has(cmt.id)) return;
-        cmt.figmaCommentId = comment.id;
-        stagedComments.set(cmt.id, cmt);
+        const existing = stagedComments.get(cmt.id);
+        const commentTime = new Date(comment.created_at).getTime();
+        const existingTime = (existing as any)?._commentCreatedAt || 0;
+        if (!existing || commentTime >= existingTime) {
+          (cmt as any)._commentCreatedAt = commentTime;
+          cmt.figmaCommentId = comment.id;
+          stagedComments.set(cmt.id, cmt);
+        }
       } else if (entitySection.startsWith('[DB_ENTITY:VOTE_BATCH]')) {
         const jsonStr = entitySection.replace('[DB_ENTITY:VOTE_BATCH]', '').trim();
         const batch: VoteBatch = JSON.parse(jsonStr);
@@ -240,7 +253,7 @@ class FigmaStoreEngine {
     if (!user) return null;
     user.bio = bio;
     if (avatarUrl) user.avatarUrl = avatarUrl;
-    
+
     const index = Array.from(this.users.keys()).indexOf(userId);
     const header = `USER: @${user.username} (Updated Profile)`;
     const payload = `${header}\n[DB_ENTITY:USER]\n${JSON.stringify(user)}`;
@@ -340,7 +353,7 @@ class FigmaStoreEngine {
     if (community.figmaCommentId) {
       try {
         await FigmaAdapter.deleteComment(community.figmaCommentId);
-      } catch (e) {}
+      } catch (e) { }
     }
     await FigmaAdapter.deleteComment(community.id);
 
@@ -358,7 +371,7 @@ class FigmaStoreEngine {
       if (mem.figmaCommentId) {
         try {
           await FigmaAdapter.deleteComment(mem.figmaCommentId);
-        } catch (e) {}
+        } catch (e) { }
       }
       await FigmaAdapter.deleteComment(mem.id);
     }
@@ -429,7 +442,7 @@ class FigmaStoreEngine {
       if (m.figmaCommentId) {
         try {
           await FigmaAdapter.deleteComment(m.figmaCommentId);
-        } catch (e) {}
+        } catch (e) { }
       }
       await FigmaAdapter.deleteComment(m.id);
     }
@@ -456,6 +469,8 @@ class FigmaStoreEngine {
   public async createPost(postData: Omit<Post, 'id' | 'createdAt'>): Promise<Post> {
     const post: Post = {
       ...postData,
+      title: replaceEmojiShortcodes(postData.title),
+      content: replaceEmojiShortcodes(postData.content),
       id: `pst_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       createdAt: Date.now(),
     };
@@ -482,8 +497,10 @@ class FigmaStoreEngine {
     const post = this.posts.get(postId);
     if (!post || post.authorId !== userId) return null;
 
-    if (updates.title) post.title = updates.title;
-    if (updates.content) post.content = updates.content;
+    const oldFigmaId = post.figmaCommentId;
+
+    if (updates.title) post.title = replaceEmojiShortcodes(updates.title);
+    if (updates.content) post.content = replaceEmojiShortcodes(updates.content);
     if (updates.type) post.type = updates.type;
     if (updates.imageUrl !== undefined) post.imageUrl = updates.imageUrl;
 
@@ -494,7 +511,13 @@ class FigmaStoreEngine {
 
     try {
       const clientMeta = await FigmaAdapter.calculateCommentCoordinates('POSTS', index >= 0 ? index : 0);
-      await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      const newFigmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      post.figmaCommentId = newFigmaId;
+      if (oldFigmaId && oldFigmaId !== newFigmaId) {
+        try {
+          await FigmaAdapter.deleteComment(oldFigmaId);
+        } catch (e) {}
+      }
     } catch (e) {
       console.warn('[FigmaStore] Post update warning:', e);
     }
@@ -512,7 +535,7 @@ class FigmaStoreEngine {
     if (post.figmaCommentId) {
       try {
         await FigmaAdapter.deleteComment(post.figmaCommentId);
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Delete associated comments from memory
@@ -523,7 +546,7 @@ class FigmaStoreEngine {
         if (cmt.figmaCommentId) {
           try {
             await FigmaAdapter.deleteComment(cmt.figmaCommentId);
-          } catch (e) {}
+          } catch (e) { }
         }
       }
     }
@@ -554,7 +577,7 @@ class FigmaStoreEngine {
       postId,
       authorId,
       parentCommentId,
-      content,
+      content: replaceEmojiShortcodes(content),
       createdAt: Date.now(),
     };
     this.comments.set(comment.id, comment);
@@ -562,7 +585,7 @@ class FigmaStoreEngine {
     const index = this.comments.size - 1;
     const author = this.getUserById(authorId);
     const post = this.getPostById(postId);
-    const snippet = content.length > 40 ? content.substring(0, 40) + '...' : content;
+    const snippet = comment.content.length > 40 ? comment.content.substring(0, 40) + '...' : comment.content;
     const header = `COMMENT by @${author?.username || 'user'} on "${post?.title || 'post'}": "${snippet}"`;
     const payload = `${header}\n[DB_ENTITY:COMMENT]\n${JSON.stringify(comment)}`;
 
@@ -581,17 +604,24 @@ class FigmaStoreEngine {
     const comment = this.comments.get(commentId);
     if (!comment || comment.authorId !== userId) return null;
 
-    comment.content = content;
+    const oldFigmaId = comment.figmaCommentId;
+    comment.content = replaceEmojiShortcodes(content);
 
     const index = Array.from(this.comments.keys()).indexOf(commentId);
     const author = this.getUserById(userId);
-    const snippet = content.length > 40 ? content.substring(0, 40) + '...' : content;
+    const snippet = comment.content.length > 40 ? comment.content.substring(0, 40) + '...' : comment.content;
     const header = `COMMENT (Updated) by @${author?.username || 'user'}: "${snippet}"`;
     const payload = `${header}\n[DB_ENTITY:COMMENT]\n${JSON.stringify(comment)}`;
 
     try {
       const clientMeta = await FigmaAdapter.calculateCommentCoordinates('COMMENTS', index >= 0 ? index : 0);
-      await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      const newFigmaId = await FigmaAdapter.postComment(payload, undefined, clientMeta);
+      comment.figmaCommentId = newFigmaId;
+      if (oldFigmaId && oldFigmaId !== newFigmaId) {
+        try {
+          await FigmaAdapter.deleteComment(oldFigmaId);
+        } catch (e) {}
+      }
     } catch (e) {
       console.warn('[FigmaStore] Comment update warning:', e);
     }
@@ -609,7 +639,7 @@ class FigmaStoreEngine {
     if (comment.figmaCommentId) {
       try {
         await FigmaAdapter.deleteComment(comment.figmaCommentId);
-      } catch (e) {}
+      } catch (e) { }
     }
     return true;
   }
@@ -645,7 +675,7 @@ class FigmaStoreEngine {
 
     try {
       await this.flushVoteBatch();
-    } catch (e) {}
+    } catch (e) { }
 
     const tally = this.getVoteTally(targetId);
     return { score: tally.score, userVote: direction };
@@ -670,7 +700,7 @@ class FigmaStoreEngine {
     if (oldFigmaId) {
       try {
         await FigmaAdapter.deleteComment(oldFigmaId);
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }

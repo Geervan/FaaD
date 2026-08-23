@@ -1,4 +1,5 @@
 import React from 'react';
+import { replaceEmojiShortcodes } from '@/lib/emoji';
 
 interface FormattedTextProps {
   content: string;
@@ -9,7 +10,8 @@ interface FormattedTextProps {
 export default function FormattedText({ content, className = '', style }: FormattedTextProps) {
   if (!content) return null;
 
-  const lines = content.split('\n');
+  const parsedContent = replaceEmojiShortcodes(content);
+  const lines = parsedContent.split('\n');
 
   // Helper to parse inline elements (links, bold, italic)
   const parseInline = (text: string): React.ReactNode[] => {
