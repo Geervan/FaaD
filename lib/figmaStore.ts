@@ -199,6 +199,8 @@ class FigmaStoreEngine {
         const jsonStr = entitySection.replace('[DB_ENTITY:POST]', '').trim();
         const post: Post = JSON.parse(jsonStr);
         if (this.deletedEntityIds.has(post.id)) return;
+        post.title = replaceEmojiShortcodes(post.title);
+        post.content = replaceEmojiShortcodes(post.content);
         const existing = stagedPosts.get(post.id);
         const commentTime = new Date(comment.created_at).getTime();
         const existingTime = (existing as any)?._commentCreatedAt || 0;
@@ -211,6 +213,7 @@ class FigmaStoreEngine {
         const jsonStr = entitySection.replace('[DB_ENTITY:COMMENT]', '').trim();
         const cmt: Comment = JSON.parse(jsonStr);
         if (this.deletedEntityIds.has(cmt.id)) return;
+        cmt.content = replaceEmojiShortcodes(cmt.content);
         const existing = stagedComments.get(cmt.id);
         const commentTime = new Date(comment.created_at).getTime();
         const existingTime = (existing as any)?._commentCreatedAt || 0;
