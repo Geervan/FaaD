@@ -61,15 +61,21 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
 
           <div className="profile-stats-row">
             <span><strong>Joined:</strong> {new Date(user.createdAt).toLocaleDateString()}</span>
-            <span><strong>Topics:</strong> {posts.length}</span>
-            <span><strong>Comments:</strong> {comments.length}</span>
-            <span><strong>Communities:</strong> {joinedCommunities.length}</span>
+            <a href="#topics-section" className="profile-stat-link">
+              <strong>Topics:</strong> {posts.length}
+            </a>
+            <a href="#comments-section" className="profile-stat-link">
+              <strong>Comments:</strong> {comments.length}
+            </a>
+            <a href="#communities-section" className="profile-stat-link">
+              <strong>Communities:</strong> {joinedCommunities.length}
+            </a>
           </div>
         </div>
       </div>
 
       {/* User's Authored Topics */}
-      <div style={{ marginBottom: '24px' }}>
+      <div id="topics-section" style={{ marginBottom: '24px', scrollMarginTop: '20px' }}>
         <h2 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '8px' }}>Created Topics ({posts.length})</h2>
         {posts.length === 0 ? (
           <div style={{ border: '1px solid #dee2e6', padding: '16px', borderRadius: '3px', color: '#5c6370' }}>
@@ -110,8 +116,59 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
         )}
       </div>
 
+      {/* User's Posted Comments */}
+      <div id="comments-section" style={{ marginBottom: '24px', scrollMarginTop: '20px' }}>
+        <h2 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '8px' }}>Posted Comments ({comments.length})</h2>
+        {comments.length === 0 ? (
+          <div style={{ border: '1px solid #dee2e6', padding: '16px', borderRadius: '3px', color: '#5c6370' }}>
+            User has not posted any comments yet.
+          </div>
+        ) : (
+          <div className="forum-table-wrapper">
+            <table className="forum-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '50%' }}>Comment Snippet</th>
+                  <th style={{ width: '30%' }}>Topic</th>
+                  <th style={{ width: '20%', textAlign: 'right' }}>Posted Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comments.map((c) => {
+                  const post = FigmaStore.getPostById(c.postId);
+                  const com = post ? FigmaStore.getCommunityById(post.communityId) : null;
+                  const snippet = c.content.length > 80 ? c.content.substring(0, 80) + '...' : c.content;
+                  const postUrl = post && com ? `/c/${com.slug}/posts/${post.id}` : '#';
+                  return (
+                    <tr key={c.id}>
+                      <td>
+                        <Link href={postUrl} style={{ fontWeight: '500', color: '#0f172a' }}>
+                          "{snippet}"
+                        </Link>
+                      </td>
+                      <td>
+                        {post && com ? (
+                          <Link href={postUrl} style={{ fontWeight: '600' }}>
+                            {post.title}
+                          </Link>
+                        ) : (
+                          'Unknown Topic'
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right', color: '#5c6370', fontSize: '12px' }}>
+                        {new Date(c.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Joined Communities */}
-      <div>
+      <div id="communities-section" style={{ scrollMarginTop: '20px' }}>
         <h2 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '8px' }}>Joined Communities ({joinedCommunities.length})</h2>
         {joinedCommunities.length === 0 ? (
           <div style={{ border: '1px solid #dee2e6', padding: '16px', borderRadius: '3px', color: '#5c6370' }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function VoteButton({
@@ -19,6 +19,11 @@ export default function VoteButton({
   const [userVote, setUserVote] = useState(initialUserVote);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    setScore(initialScore);
+    setUserVote(initialUserVote);
+  }, [initialScore, initialUserVote]);
+
   const handleVote = async (direction: 1 | -1) => {
     if (!isLoggedIn) {
       router.push('/login');
@@ -28,6 +33,8 @@ export default function VoteButton({
     if (loading) return;
     setLoading(true);
 
+    const prevVote = userVote;
+    const prevScore = score;
     const newDirection = userVote === direction ? 0 : direction;
     const diff = newDirection - userVote;
 
@@ -42,13 +49,17 @@ export default function VoteButton({
         body: JSON.stringify({ targetId, direction: newDirection }),
       });
 
-      if (!res.ok) {
-        setUserVote(userVote);
-        setScore(initialScore);
+      const data = await res.json();
+      if (res.ok && data.success && data.data) {
+        setScore(data.data.score);
+        setUserVote(data.data.userVote);
+      } else {
+        setUserVote(prevVote);
+        setScore(prevScore);
       }
     } catch (err) {
-      setUserVote(userVote);
-      setScore(initialScore);
+      setUserVote(prevVote);
+      setScore(prevScore);
     } finally {
       setLoading(false);
     }

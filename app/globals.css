@@ -617,6 +617,16 @@ main {
   color: var(--text-muted);
 }
 
+.profile-stat-link {
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+}
+
+.profile-stat-link:hover {
+  color: var(--link-color);
+  text-decoration: underline;
+}
+
 /* Comprehensive Mobile & Responsive Media Queries */
 @media (max-width: 640px) {
   .forum-container {
