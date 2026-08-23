@@ -1,54 +1,50 @@
-const EMOJI_MAP: Record<string, string> = {
+import * as emoji from 'node-emoji';
+
+const EMOJI_ALIASES: Record<string, string> = {
+  ':partying_face:': '🥳',
+  ':melting_face:': '🫠',
+  ':saluting_face:': '🫡',
+  ':salute:': '🫡',
+  ':smiling_face_with_tear:': '🥲',
+  ':face_with_peeking_eye:': '🫣',
+  ':face_with_diagonal_mouth:': '🫤',
+  ':dotted_line_face:': '🫥',
+  ':face_holding_back_tears:': '🥹',
+  ':heart_on_fire:': '❤️‍🔥',
+  ':mending_heart:': '🩹',
+  ':mind_blown:': '🤯',
+  ':exploding_head:': '🤯',
   ':sweat_smile:': '😅',
-  ':smile:': '😊',
-  ':slight_smile:': '🙂',
-  ':grin:': '😀',
   ':joy:': '😂',
   ':rofl:': '🤣',
-  ':heart:': '❤️',
-  ':heart_eyes:': '😍',
+  ':sob:': '😭',
+  ':skull:': '💀',
+  ':shrug:': '🤷',
+  ':facepalm:': '🤦',
+  ':pinched_fingers:': '🤌',
+  ':tada:': '🎉',
+  ':party:': '🎉',
   ':fire:': '🔥',
   ':rocket:': '🚀',
   ':thumbsup:': '👍',
   ':+1:': '👍',
   ':thumbsdown:': '👎',
   ':-1:': '👎',
-  ':sob:': '😭',
-  ':skull:': '💀',
-  ':thinking:': '🤔',
-  ':eyes:': '👀',
-  ':clap:': '👏',
-  ':tada:': '🎉',
-  ':party:': '🎉',
-  ':100:': '💯',
-  ':check:': '✅',
-  ':heavy_check_mark:': '✅',
-  ':x:': '❌',
-  ':wink:': '😉',
-  ':cool:': '😎',
-  ':sunglasses:': '😎',
-  ':pray:': '🙏',
+  ':heart:': '❤️',
   ':star:': '⭐',
-  ':wave:': '👋',
-  ':poop:': '💩',
-  ':clown:': '🤡',
-  ':sparkles:': '✨',
-  ':raised_hands:': '🙌',
-  ':muscle:': '💪',
-  ':exploding_head:': '🤯',
-  ':mind_blown:': '🤯',
-  ':salute:': '🫡',
+  ':100:': '💯',
 };
 
 /**
- * Replaces emoji shortcodes (e.g. :sweat_smile:) with actual unicode emojis (e.g. 😅).
+ * Replaces any emoji shortcodes (e.g. :sweat_smile:, :fire:, :partying_face:, :melting_face:)
+ * with actual unicode emojis across the full Unicode/GitHub/Slack dataset.
  */
 export function replaceEmojiShortcodes(text: string): string {
   if (!text) return text;
-  return text.replace(/:[a-z0-9_+-]+:/gi, (match) => {
+  let result = emoji.emojify(text);
+  result = result.replace(/:[a-z0-9_+-]+:/gi, (match) => {
     const lower = match.toLowerCase();
-    return EMOJI_MAP[lower] || match;
+    return EMOJI_ALIASES[lower] || match;
   });
+  return result;
 }
-
-export const POPULAR_EMOJIS = ['😅', '😊', '😂', '❤️', '🔥', '🚀', '👍', '😭', '💀', '🤔', '👀', '🎉', '💯', '✨', '🙌', '💪'];
